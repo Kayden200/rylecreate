@@ -50,6 +50,21 @@ def get_proxies():
         print(Fore.RED + f"[!] Error fetching proxies: {e}")
         return []
 
+# Validate proxy by checking if it connects successfully to a test URL
+def validate_proxy(proxy):
+    try:
+        test_url = "https://httpbin.org/ip"
+        response = requests.get(test_url, proxies={"http": proxy, "https": proxy}, timeout=5)
+        if response.status_code == 200:
+            print(Fore.GREEN + f"[+] Proxy {proxy} is valid.")
+            return True
+        else:
+            print(Fore.RED + f"[!] Proxy {proxy} failed.")
+            return False
+    except requests.exceptions.RequestException as e:
+        print(Fore.RED + f"[!] Proxy {proxy} error: {e}")
+        return False
+
 # Get OTP from TempMail
 def get_email_otp(email):
     domain = email.split("@")[1]
@@ -118,6 +133,15 @@ def main():
         print(Fore.RED + "[!] No working proxies found. Exiting...")
         return
     
+    valid_proxies = []
+    for proxy in proxies:
+        if validate_proxy(proxy):
+            valid_proxies.append(proxy)
+    
+    if not valid_proxies:
+        print(Fore.RED + "[!] No valid proxies available. Exiting...")
+        return
+    
     print(Fore.CYAN + """
     ================================
         FB Auto Create - Termux
@@ -128,7 +152,7 @@ def main():
     
     with open("accounts.txt", "a") as file:
         for _ in range(num_accounts):
-            proxy = random.choice(proxies)
+            proxy = random.choice(valid_proxies)
             print(Fore.BLUE + f"[*] Using Proxy: {proxy}")
             account = create_facebook_account(proxy)
             if account:
