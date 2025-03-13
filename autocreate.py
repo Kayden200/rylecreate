@@ -41,11 +41,14 @@ def get_temp_email():
 
 # Fetch fresh proxy list
 def get_proxies():
-    response = requests.get(PROXY_SOURCE)
-    if response.status_code == 200:
+    try:
+        response = requests.get(PROXY_SOURCE)
+        response.raise_for_status()  # Check if the request was successful
         proxies = response.text.split("\n")
         return [proxy.strip() for proxy in proxies if proxy.strip()]
-    return []
+    except requests.exceptions.RequestException as e:
+        print(Fore.RED + f"[!] Error fetching proxies: {e}")
+        return []
 
 # Get OTP from TempMail
 def get_email_otp(email):
@@ -112,7 +115,7 @@ def create_facebook_account(proxy):
 def main():
     proxies = get_proxies()
     if not proxies:
-        print(Fore.RED + "[!] No proxies found. Exiting...")
+        print(Fore.RED + "[!] No working proxies found. Exiting...")
         return
     
     print(Fore.CYAN + """
@@ -131,7 +134,7 @@ def main():
             if account:
                 file.write(account + "\n")
 
-    print(Fore.GREEN + "[+] All Done✅")
+    print(Fore.GREEN + "[+] All accounts saved in accounts.txt")
 
 if __name__ == "__main__":
     main()
