@@ -9,9 +9,6 @@ init(autoreset=True)
 # TempMail API (Replace with working API if needed)
 TEMPMAIL_API = "https://www.1secmail.com/api/v1/"
 
-# Proxy Scraper URL
-PROXY_SOURCE = "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt"
-
 # Facebook Sign-up URL
 FB_SIGNUP_URL = "https://m.facebook.com/reg"
 
@@ -39,31 +36,12 @@ def get_temp_email():
         print(Fore.RED + "[!] Failed to get temp email.")
         return None
 
-# Fetch fresh proxy list
-def get_proxies():
-    try:
-        response = requests.get(PROXY_SOURCE)
-        response.raise_for_status()  # Check if the request was successful
-        proxies = response.text.split("\n")
-        return [proxy.strip() for proxy in proxies if proxy.strip()]
-    except requests.exceptions.RequestException as e:
-        print(Fore.RED + f"[!] Error fetching proxies: {e}")
-        return []
-
-# Validate proxy by checking if it connects successfully to a test URL
-def validate_proxy(proxy):
-    try:
-        test_url = "https://httpbin.org/ip"
-        response = requests.get(test_url, proxies={"http": proxy, "https": proxy}, timeout=5)
-        if response.status_code == 200:
-            print(Fore.GREEN + f"[+] Proxy {proxy} is valid.")
-            return True
-        else:
-            print(Fore.RED + f"[!] Proxy {proxy} failed.")
-            return False
-    except requests.exceptions.RequestException as e:
-        print(Fore.RED + f"[!] Proxy {proxy} error: {e}")
-        return False
+# Generate a random birthday
+def generate_birthday():
+    day = random.randint(1, 28)
+    month = random.randint(1, 12)
+    year = random.randint(1985, 2002)
+    return str(day), str(month), str(year)
 
 # Get OTP from TempMail
 def get_email_otp(email):
@@ -87,27 +65,27 @@ def get_email_otp(email):
     return None
 
 # Create a Facebook account
-def create_facebook_account(proxy):
+def create_facebook_account():
+    first_name = random.choice(first_names)
+    last_name = random.choice(last_names)
     email = get_temp_email()
     if not email:
         return None
     
     password = generate_password()
-    first_name = random.choice(first_names)
-    last_name = random.choice(last_names)
+    day, month, year = generate_birthday()
     
     session = requests.Session()
-    session.proxies.update({"http": proxy, "https": proxy})
     
     data = {
         "firstname": first_name,
         "lastname": last_name,
         "reg_email__": email,
         "reg_passwd__": password,
-        "sex": "2",
-        "birthday_day": str(random.randint(1, 28)),
-        "birthday_month": str(random.randint(1, 12)),
-        "birthday_year": str(random.randint(1985, 2002)),
+        "sex": "2",  # Male as default
+        "birthday_day": day,
+        "birthday_month": month,
+        "birthday_year": year,
         "submit": "Sign Up"
     }
 
@@ -119,7 +97,6 @@ def create_facebook_account(proxy):
     
     otp = get_email_otp(email)
     if otp:
-        # Submit OTP (this part may require additional handling)
         print(Fore.GREEN + f"[+] Facebook account created successfully: {first_name} {last_name} | {email} | {password}")
         return f"{first_name} {last_name} | {email} | {password}"
     
@@ -128,33 +105,11 @@ def create_facebook_account(proxy):
 
 # Main function with menu
 def main():
-    proxies = get_proxies()
-    if not proxies:
-        print(Fore.RED + "[!] No working proxies found. Exiting...")
-        return
-    
-    valid_proxies = []
-    for proxy in proxies:
-        if validate_proxy(proxy):
-            valid_proxies.append(proxy)
-    
-    if not valid_proxies:
-        print(Fore.RED + "[!] No valid proxies available. Exiting...")
-        return
-    
-    print(Fore.CYAN + """
-    ================================
-        FB Auto Create - Termux
-    ================================
-    """)
-    
     num_accounts = int(input("Enter the number of accounts to create: "))
     
     with open("accounts.txt", "a") as file:
         for _ in range(num_accounts):
-            proxy = random.choice(valid_proxies)
-            print(Fore.BLUE + f"[*] Using Proxy: {proxy}")
-            account = create_facebook_account(proxy)
+            account = create_facebook_account()
             if account:
                 file.write(account + "\n")
 
